@@ -1,0 +1,205 @@
+<!doctype html>
+<html>
+<head>
+	<title> Simple Express app </title>
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+	<style>
+		body { padding-top:80px; }
+		.alert-success,.alert-danger{display:none;}
+	</style>
+</head>
+<body>
+<div class="container">
+
+	<div class="jumbotron text-center">
+
+		<p>Express JS with MongoDB</p>
+		<p>Sorting application</p>
+
+	</div>
+	<div class="col-sm-6">
+		<form method="post" action="javascript:void(0);" id="form-submit">
+			<input type="number" name="number" class="form-control" placeholder="Enter number" id="number" style="margin-bottom:20px">
+			<button type="submit" class="btn btn-primary" style="margin-bottom:20px" >Add Number to Database</button>
+		</form>
+		<div class="alert alert-success">
+		  <strong>Success!</strong> Number was added successfully to the database.
+		</div>
+		<div class="alert alert-danger">
+		  <strong>Oh snap!</strong> There was some error adding this number to the database.
+		</div>
+	</div>
+	<div class="col-sm-6">
+		<div class="col-sm-12 table-responsive">
+			<table class="table table-hover">
+					<tr>
+				        <th>#</th>
+				        <th>Number</th>
+				    </tr>
+			    <tbody id="tbody"></tbody>
+			</table>
+		</div>
+		<div class="col-sm-12 text-center">
+			<button class="btn btn-primary" onclick="sortnow('bubble')">Bubble sort</button>
+			<button class="btn btn-primary" onclick="sortnow('selection')">Selection sort</button>
+			<button class="btn btn-primary" onclick="sortnow('quick')">Quick sort</button>
+
+			<button class="btn btn-danger" onclick="cleardata()">Clear all</button>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	$("#form-submit").submit(function(){
+        var data = {
+				number: $("#number").val(),
+			}; 
+			$.ajax({
+				type: "POST",
+				url: "/addnumber",
+				data: data,
+				cache: false,   
+				success: function(data){
+					console.log(data)
+					if(data.status_code == 200){
+						$('.alert-success').show();
+						getData();
+						$("#number").val('')
+					}
+					else
+					{
+						$('.alert-danger').show();
+					}
+				}
+			});
+		});
+
+		var arrdata=[];
+		function getData() {
+
+        // Grab the data
+        $.get('/listAllNumbers', function (data) {
+           // Generate the html from the given data.
+           console.log(data);
+           $('#tbody').empty();
+           arrdata=data.numbers_list;
+		        $.each(arrdata, function (index, item) {
+				     var eachrow = "<tr>"
+				                 + "<td>" + index + "</td>"
+				                 + "<td>" + item.number + "</td>"
+				                 + "</tr>";
+				     $('#tbody').append(eachrow);
+				});
+		    });
+		}
+		getData();
+
+		function sortnow(algorithm) {
+			if(algorithm=='bubble'){
+				arrdata= bubbleSort(arrdata);
+			}else if('selection'){
+				arrdata= selectionSort(arrdata);
+			}else if('insertion'){
+				arrdata= insertionSort(arrdata);
+			}else if('quick'){
+				arrdata= quickSort(arrdata,0,arrdata.length-1); 
+			}
+		    //arrdata.sort(function(a, b){return a.number-b.number});
+			console.log(arrdata);
+		     $('#tbody').empty();
+		    $.each(arrdata, function (index, item) {
+				     var eachrow = "<tr>"
+				                 + "<td>" + index + "</td>"
+				                 + "<td>" + item.number + "</td>"
+				                 + "</tr>";
+				     $('#tbody').append(eachrow);
+				});
+		}
+		//bubble sort
+		function bubbleSort(arr){
+		   var len = arr.length;
+		   for (var i = len-1; i>=0; i--){
+		     for(var j = 1; j<=i; j++){
+		       if(arr[j-1].number>arr[j].number){
+		           var temp = arr[j-1].number;
+		           arr[j-1].number = arr[j].number;
+		           arr[j].number = temp;
+		        }
+		     }
+		   }
+		   return arr;
+		}
+		//selection sort
+		function selectionSort(arr){
+		  var minIdx, temp, 
+		      len = arr.length;
+		  for(var i = 0; i < len; i++){
+		    minIdx = i;
+		    for(var  j = i+1; j<len; j++){
+		       if(arr[j].number<arr[minIdx].number){
+		          minIdx = j;
+		       }
+		    }
+		    temp = arr[i].number;
+		    arr[i].number = arr[minIdx].number;
+		    arr[minIdx].number = temp;
+		  }
+		  return arr;
+		}
+		//quick sort
+		function quickSort(arr, left, right){
+		   var len = arr.length;
+		   var pivot, partitionIndex;
+
+
+		  if(left < right){
+		    pivot = right;
+		    partitionIndex = partition(arr, pivot, left, right);
+		    
+		   //sort left and right
+		   quickSort(arr, left, partitionIndex - 1);
+		   quickSort(arr, partitionIndex + 1, right);
+		  }
+		  return arr;
+		}
+		function partition(arr, pivot, left, right){
+			//console.log(arr,pivot,left,right)
+		   var pivotValue = arr[pivot].number,
+		       partitionIndex = left;
+
+		   for(var i = left; i < right; i++){
+		    if(arr[i].number < pivotValue){
+		      swap(arr, i, partitionIndex);
+		      partitionIndex++;
+		    }
+		  }
+		  swap(arr, right, partitionIndex);
+		  return partitionIndex;
+		}
+		function swap(arr, i, j){
+		   var temp = arr[i].number;
+		   arr[i].number = arr[j].number;
+		   arr[j].number = temp;
+		}
+
+  		//clear all data
+		function cleardata() {
+			let answer=confirm('Are u sure, you want to clear all data')
+        	if(answer){
+        		$.get('/deleteNumbers', function (data) {
+	          		console.log(data);
+	          		if(data.status_code==200){
+	          			getData();
+	          		}
+			    });
+        		}
+		}
+		$('#number').focus(function(){
+			$('.alert-success').hide();
+			$('.alert-danger').hide();
+		})
+
+</script>
+</body>
+</html>
